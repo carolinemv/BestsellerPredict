@@ -3,6 +3,10 @@ from dotenv import load_dotenv
 import json
 import os
 from datetime import datetime, timedelta
+import requests
+from dotenv import load_dotenv
+import json
+import os
 
 load_dotenv()
 
@@ -24,31 +28,9 @@ start_date = datetime(2020, 1, 5)  # Primeiro domingo de 2020
 end_date = datetime(2023, 12, 31)
 
 # Gerar domingos para o período de interesse
-sundays = generate_sundays(start_date, end_date)
+# sundays = generate_sundays(start_date, end_date)
 
-#literary genre
-url = "https://api.nytimes.com/svc/books/v3/lists/names.json"
-
-params = {
-            'api-key': api_key
-        }
-response = requests.get(url, params=params)
-print(response)
-data = response.json()
-results = data.get('results', [])
-list_names = []         
-for result in results:
-    list_name = result.get('list_name_encoded')
-    if list_name:
-        list_names.append(list_name)
-
-# print(list_names)
-import requests
-from dotenv import load_dotenv
-import json
-import os
-
-load_dotenv()
+# print(sundays)
 
 # URL base da API
 url_base = 'https://api.nytimes.com/svc/books/v3/lists/{date}/{list}.json'
@@ -61,28 +43,38 @@ def get_best_sellers(date, list_name):
     params = {
         'api-key': api_key
     }
-    
     try:
+        extracted_info =[]
         response = requests.get(url, params=params)
-        response.raise_for_status()  # Levanta uma exceção para erros HTTP
-        
-        # Obter o JSON da resposta
         data = response.json()
-        return data
+        results = data['results']
+        books = results['books'][1]
+        extracted_info.append({
+                    'List Name': results['list_name'],
+                    'Bestsellers Date': results['bestsellers_date'],
+                    'Published Date': results['published_date'],
+                    'Rank': books['rank'],
+                    'Weeks on List': books['weeks_on_list'],
+                    'Publisher': books['publisher'],
+                    'Title': books['title'],
+                    'Author': books['author'],
+                    'isbn13': books['primary_isbn13']
+                })
+
+        return extracted_info
     
     except requests.HTTPError as http_err:
         print(f'HTTP error occurred: {http_err}')
     except Exception as err:
         print(f'Other error occurred: {err}')
 
-# Exemplo de data e lista
-date = '2023-09-01'  # Data no formato YYYY-MM-DD
-list_name = 'hardcover-fiction'  # Nome da lista
+# Exemplo de uso
+date = '2020-01-05'
+list_name = 'hardcover-fiction'  # Exemplo de lista, ajuste conforme necessário
 
-best_sellers_data = get_best_sellers(date, list_name)
+data = get_best_sellers(date, list_name)
 
-# Salvar os dados em um arquivo JSON
 with open('best_sellers.json', 'w') as f:
-    json.dump(best_sellers_data, f, indent=4)
+    json.dump(data, f, indent=4)
 
 print(f"Dados coletados para {list_name} em {date}.")
